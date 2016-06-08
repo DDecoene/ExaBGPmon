@@ -1,29 +1,32 @@
 #!/usr/bin/env python
 
 import json
-import os
-from sys import stdin, stdout
 import time
 from datetime import datetime
+from sys import stdin, stdout
+
+import os
 from pymongo import MongoClient
-from tasks import announce_route, withdraw_route
 
 ########################################
 ###### Syslog for Troubleshooting ######
 ########################################
 import syslog
 
-def _prefixed (level, message):
-    now = time.strftime('%a, %d %b %Y %H:%M:%S',time.localtime())
-    return "%s %-8s %-6d %s" % (now,level,os.getpid(),message)
+
+def _prefixed(level, message):
+    now = time.strftime('%a, %d %b %Y %H:%M:%S', time.localtime())
+    return "%s %-8s %-6d %s" % (now, level, os.getpid(), message)
+
 
 syslog.openlog("ExaBGP")
+syslog.syslog('Started logtodb')
 
 ########################################
 ##############  DB Setup ###############
 ########################################
-#This can possibly be imported from models
-#I'm not sure yet as it might be good to keep it separate with the ExaBGP process
+# This can possibly be imported from models
+# I'm not sure yet as it might be good to keep it separate with the ExaBGP process
 client = MongoClient()
 db = client.exabgp_db
 updates = db.bgp_updates
@@ -31,8 +34,8 @@ bgp_peers = db.bgp_peers
 adv_routes = db.adv_routes
 bgp_config = db.bgp_config
 
-def update_state(state):
 
+def update_state(state):
     # Update ExaBGP state and last_start
     current_config = bgp_config.find_one()
     if state == 'running':
@@ -40,7 +43,9 @@ def update_state(state):
     else:
         bgp_config.update(current_config, {'$set': {'state': state, 'last_stop': datetime.now()}})
 
+
 update_state('running')
+
 
 def object_formatter(line):
     temp_message = json.loads(line)
@@ -48,12 +53,13 @@ def object_formatter(line):
     try:
         timestamp = datetime.fromtimestamp(temp_message['time'])
     except Exception as e:
-        syslog.syslog(syslog.LOG_ALERT, _prefixed('ERROR', 'Peer: %s, %s' % (temp_message['neighbor']['ip'], e.message)))
+        syslog.syslog(syslog.LOG_ALERT,
+                      _prefixed('ERROR', 'Peer: %s, %s' % (temp_message['neighbor']['ip'], e.message)))
         return None
 
     if temp_message['type'] == 'update':
-        
-        #Ignore EoR updates
+
+        # Ignore EoR updates
         if temp_message['neighbor']['message'].get("eor", None):
             return None
 
@@ -63,7 +69,7 @@ def object_formatter(line):
                 'time': timestamp,
                 'peer': temp_message['neighbor']['ip'],
             }
-            
+
             # Get rid of IP address keys, use list prefixes instead
             update = {}
             for section, info in temp_message['neighbor']['message']['update'].iteritems():
@@ -77,8 +83,9 @@ def object_formatter(line):
                         for peer_adv in peer.values():
                             for prefix in peer_adv:
                                 # Add to peer list of current prefixes
-                                bgp_peers.update_one({'ip': message['peer']}, {'$addToSet': {'current_prefixes': prefix}})
-                                
+                                bgp_peers.update_one({'ip': message['peer']},
+                                                     {'$addToSet': {'current_prefixes': prefix}})
+
                                 prefix_list.append(prefix)
                     announce[family] = prefix_list
                     update['announce'] = announce
@@ -98,13 +105,10 @@ def object_formatter(line):
 
             message['update'] = update
 
-
             return message
 
         except KeyError:
             syslog.syslog(syslog.LOG_ALERT, _prefixed('DEBUG', line))
-
-
 
     if temp_message['type'] == 'keepalive':
         message = {
@@ -129,16 +133,16 @@ def object_formatter(line):
             if peer['state'] != 'up':
                 for route in adv_routes.find({'peer': peer['ip']}):
                     # announce_route(peer, route)
-                    announcement =  'neighbor %s announce route %s next-hop %s' % (
+                    announcement = 'neighbor %s announce route %s next-hop %s' % (
                         peer['ip'], route['prefix'], route['attributes']['next-hop'])
-                    stdout.write( announcement + '\n')
+                    stdout.write(announcement + '\n')
                     stdout.flush()
 
             # Change state to up from down or connected
             bgp_peers.update_one({'ip': message['peer']}, {'$set': {'state': message['state']}})
 
             return message
-        
+
         elif message['state'] == 'down':
             bgp_peers.update_one({'ip': message['peer']}, {'$set': {'state': message['state'], 'current_prefixes': []}})
 
@@ -159,7 +163,7 @@ def object_formatter(line):
         if temp_message['notification'] == 'shutdown':
             for peer in bgp_peers.find():
                 # Mark peers as offline
-                bgp_peers.update({'ip': peer['ip']}, { '$set': {'state': 'down'}})
+                bgp_peers.update({'ip': peer['ip']}, {'$set': {'state': 'down'}})
 
                 update_state('stopped')
 
@@ -169,11 +173,12 @@ def object_formatter(line):
         syslog.syslog(syslog.LOG_ALERT, _prefixed('DEBUG', temp_message))
         return None
 
+
 counter = 0
 while True:
     try:
         line = stdin.readline().strip()
-        
+
         # When the parent dies we are seeing continual newlines, so we only access so many before stopping
         if line == "":
             counter += 1
@@ -182,7 +187,7 @@ while True:
             continue
 
         counter = 0
-        
+
         message = object_formatter(line)
 
         if message:

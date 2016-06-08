@@ -1,7 +1,8 @@
-from ipaddress import IPv4Network, IPv6Network, AddressValueError
 from flask.ext.wtf import Form
-from wtforms import StringField, SubmitField, SelectField, PasswordField, TextAreaField, BooleanField
-from wtforms.validators import Required, IPAddress, StopValidation, NumberRange, Optional, ValidationError
+from ipaddress import IPv4Network, AddressValueError
+from wtforms import StringField, SubmitField, SelectField, BooleanField
+from wtforms.validators import Required, IPAddress, Optional, ValidationError
+
 
 def validate_prefix(form, field):
     try:
@@ -10,6 +11,7 @@ def validate_prefix(form, field):
         raise ValidationError('%s is not a valid prefix' % field.data)
     except ValueError as e:
         raise ValidationError(e.message)
+
 
 class Range(object):
     """ This replaces wtforms NumberRange() validator since it wasn't working correctly"""
@@ -31,12 +33,12 @@ class Range(object):
 
 
 class AdvertiseRoute(Form):
-
     prefix = StringField('IP Prefix', validators=[Required(), validate_prefix])
     next_hop = StringField('Next Hop', validators=[Required(), IPAddress()])
     med = StringField('MED', validators=[Optional(), Range(0, 500)])
     local_pref = StringField('Local Preference', validators=[Optional(), Range(0, 500)])
-    origin = SelectField('Origin', choices=[('igp','IGP'),('egp', 'EGP'), ('?', 'Incomplete (?)')], default='?', validators=[Required()])
+    origin = SelectField('Origin', choices=[('igp', 'IGP'), ('egp', 'EGP'), ('?', 'Incomplete (?)')], default='?',
+                         validators=[Required()])
     submit = SubmitField('Send')
 
     def validate_prefix(form, field):
@@ -47,16 +49,17 @@ class AdvertiseRoute(Form):
         except ValueError as e:
             raise ValidationError(e.message)
 
-class ConfigForm(Form):
 
+class ConfigForm(Form):
     router_id = StringField('Router-ID', validators=[Required(), IPAddress()])
     asn = StringField('Local AS Number', validators=[Required(), Range(1, 65535)])
     local_ip = StringField('Local IP Address', validators=[Required(), IPAddress()])
     submit = SubmitField('Save Config')
 
-class BGPPeer(Form):
 
+class BGPPeer(Form):
     ip_address = StringField('IP Address', validators=[Required(), IPAddress()])
     asn = StringField('AS Number', validators=[Required(), Range(1, 65535)])
     enabled = BooleanField('Enabled')
-    submit = SubmitField('Save')    submit = SubmitField('Save')
+    submit = SubmitField('Save')
+    submit = SubmitField('Save')

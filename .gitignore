@@ -13,3 +13,7 @@ share/
 conf.ini
 
 *.log
+
+.idea
+/venv/
+*.env
