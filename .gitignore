@@ -19,4 +19,4 @@ conf.ini
 *.env
 /.vagrant/
 .DS_Store
-
+*.box

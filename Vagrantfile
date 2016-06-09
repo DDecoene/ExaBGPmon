@@ -3,6 +3,7 @@
 
 Vagrant.configure(2) do |config|
     config.vm.box = "exaBGPmon"
+    #config.vm.box_url="https://github.com/DDecoene/ExaBGPmon/releases/download/v1.0/exaBGPmon.box"
     config.vm.box_url="file://exaBGPmon.box"
     #config.vm.box = "ubuntu/trusty64"
 
