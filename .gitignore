@@ -17,3 +17,6 @@ conf.ini
 .idea
 /venv/
 *.env
+/.vagrant/
+.DS_Store
+
