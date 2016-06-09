@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-
 from bson.objectid import ObjectId
 from config import Config
 from flask import Flask, request, render_template, flash, redirect, url_for, jsonify

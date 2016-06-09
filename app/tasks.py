@@ -25,12 +25,14 @@ def build_env_file():
     """ This function makes sure there is an env for exabgp.
 
     """
-    r = check_output(['exabgp', '--fi'])
+    temp_path = os.path.join(os.path.abspath(os.curdir), 'etc')
+    j2_env = Environment(loader=FileSystemLoader(os.path.join(temp_path)))
 
+    config_file = j2_env.get_template('env.tpl').render()
 
     temp_path = os.path.join(os.path.abspath(os.curdir), 'etc')
     with open(os.path.join(temp_path, 'exabgp.env'), 'w') as ini_file:
-        ini_file.write(r)
+        ini_file.write(config_file)
 
     print 'Created env file: %s' % os.path.join(temp_path, 'exabgp.env')
 
@@ -57,7 +59,7 @@ def send_exabgp_command(command):
 def is_exabgp_running():
     """ This function checks if the exabgp process is running. """
 
-    r = check_output(['supervisorctl', 'status'])
+    r = check_output(['supervisorctl', 'status', 'exabgp'])
 
     if 'RUNNING' in r:
         return True

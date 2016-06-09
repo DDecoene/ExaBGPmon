@@ -1,13 +1,14 @@
-group exabgpmon { 
-	router-id {{ config['router-id'] }}; 
-	local-address {{ config['local-address'] }}; 
+group exabgpmon {
+	local-as 34762;
+	router-id 10.0.2.15;
+	local-address 10.0.2.15;
 
 	capability {
 	    route-refresh;
 	}
 
 	process logtodb { 
-		run {{ config['python-path'] }} {{ config['root-path'] }}/app/logtodb.py; 
+		run {{ config['python-path'] }} {{ config['root-path'] }}/app/logtodb.py;
 		encoder json;
 		receive-routes;
 		neighbor-changes;
@@ -29,5 +30,14 @@ group exabgpmon {
 	}
 	{% endif %}
 	{% endfor %}
+
+
+	neighbor 217.21.191.38 {
+		local-address 10.0.2.15;
+		family {
+			inet4 unicast;
+		}
+		peer-as 65534;
+	}
 
 }

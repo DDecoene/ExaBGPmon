@@ -15,15 +15,7 @@ if ! command -v pip; then
     easy_install -U pip
 fi
 
-# Cleanup
-apt-get clean
-
-#echo "Zeroing free space to improve compression."
-#dd if=/dev/zero of=/EMPTY bs=1M
-#rm -f /EMPTY
-
 locale-gen nl_NL.UTF-8
-
 
 echo "Installing python requirements"
 pip install -r /vagrant/requirements.txt
@@ -36,6 +28,9 @@ if [[ ! -f /vagrant/etc/exabgp.env ]]; then
     python manage.py build_env
 fi
 
-echo "Start Supervisor"
-supervisord -c /vagrant/etc/supervisord.conf
-supervisorctl -c /vagrant/etc/supervisord.conf start exabgp
+# Cleanup
+apt-get clean
+
+echo "Zeroing free space to improve compression."
+dd if=/dev/zero of=/EMPTY bs=1M
+rm -f /EMPTY
